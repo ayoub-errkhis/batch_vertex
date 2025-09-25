@@ -1,0 +1,7 @@
+fastapi==0.116.1
+pymongo==4.13.2
+google-cloud-storage==3.2.0
+uvicorn==0.35.0
+google-genai==1.28.0
+json-repair==0.48.0
+redis==6.4.0

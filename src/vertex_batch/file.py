@@ -56,14 +56,11 @@ class File:
 
             with open(self.file_path, "a") as file:
                 for payload in paylods:
-                    self.db.update_payload(
-                        custom_id=payload['custom_id'],
-                        file_name=self.file_path.name
-                    )
-                    
+                    custom_id = payload['custom_id']
+
                     if is_relaunch:
                         self.db.update_payload(
-                            custom_id=payload['custom_id'],
+                            custom_id= custom_id,
                             relaunched=1
                         )
 
@@ -87,9 +84,11 @@ class File:
                         },
                     }
                     file.write(f"{line_content}\n")
+
                     self.db.update_payload(
-                        custom_id=payload['custom_id'],
-                        status="written"
+                        custom_id=custom_id,
+                        status="written",
+                        file_name=self.file_path.name
                     )
 
             self.db.update_file(

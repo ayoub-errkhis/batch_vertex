@@ -143,7 +143,7 @@ class File:
                 location=os.getenv("GOOGLE_PROJECT_LOCATION", "us-central1"),
             )
 
-            output_file = f"gs://{os.getenv('BUCKET_GS')}/output/gemini/{os.path.splitext(os.path.basename(self.file_path))[0]}"
+            output_file = f"gs://{os.getenv('GOOGLE_STORAGE_BUCKET')}/output/gemini/{os.path.splitext(os.path.basename(self.file_path))[0]}"
 
             vertex_client.batches.create(
                 model=self.gemini_model,

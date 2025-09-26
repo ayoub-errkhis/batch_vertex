@@ -34,11 +34,6 @@ class Callback:
 
             results: list = []
 
-            self.db.update_file(
-                file_path=Path(f"{file_path.parts[2]}.jsonl"),
-                status="DONE"
-            )
-
             with open(downloaded_file_path, "r") as file:
                 for line in file:
                     data = json_repair.loads(line)
@@ -84,8 +79,15 @@ class Callback:
             if self.func:
                 await asyncio.to_thread(self.func, results, Path(file_path))
 
+            self.db.update_file(
+                file_path=Path(f"{file_path.parts[2]}.jsonl"),
+                status="DONE"
+            )
+
             local_file_path = self.destination_dir / Path(file_path).name
             local_file_path.unlink(missing_ok=True)
+
+            return {"status": "success", "message": "File processed successfully"}
 
         except Exception as e:
             return {"status": "error", "message": str(e)}

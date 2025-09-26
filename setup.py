@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="vertex_batch",
-    version="0.1.4",
+    version="0.1.5",
     author="AYOUB ERRKHIS",
     author_email="ayoub.errkhis@aol.com",
     description="A module for batch processing with Google Cloud Storage and MongoDB integration.",

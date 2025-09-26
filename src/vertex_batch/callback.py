@@ -5,6 +5,7 @@ import json_repair
 import asyncio
 from .file import File
 from .db import Db
+import os
 
 class Callback:
 
@@ -21,8 +22,8 @@ class Callback:
     def _process_file_gemini(self, file_path: Path) -> list:
         try:
 
-            if file_path.suffix != ".jsonl":
-                raise ValueError("File must be a .jsonl file")
+            if file_path.suffix != ".jsonl" or not file_path.is_relative_to(Path("output/")):
+                raise ValueError("File must be a .jsonl file and starts with output/")
 
             downloaded_file_path = File.download(
                 google_storage_file_path=file_path,
@@ -59,6 +60,8 @@ class Callback:
                         }
                     )
 
+            os.remove(downloaded_file_path)
+            
             return results
         except Exception as e:
             print(e)

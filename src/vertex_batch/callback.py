@@ -63,31 +63,34 @@ class Callback:
 
     async def callback(self, request: Request):
         try:
-
+            custom_function_well_treated = False
             data = await request.json()
             file_path = data.get("name")
+
             if not file_path:
                 raise ValueError("File path is required")
 
             results = await asyncio.to_thread(
                 self._process_file_gemini, Path(file_path)
             )
+            
             if not results:
                 raise Exception("No results found in the file")
             
             # custom func accepts : results as list and file Path
             if self.func:
-                await asyncio.to_thread(self.func, results, Path(file_path))
+                custom_function_well_treated = await asyncio.to_thread(self.func, results, Path(file_path))
 
-            self.db.update_file(
-                file_path=Path(f"{file_path.parts[2]}.jsonl"),
-                status="DONE"
-            )
+            if custom_function_well_treated:
+                self.db.update_file(
+                    file_path=Path(f"{Path(file_path).parts[2]}.jsonl"),
+                    status="DONE"
+                )
 
             local_file_path = self.destination_dir / Path(file_path).name
             local_file_path.unlink(missing_ok=True)
 
-            return {"status": "success", "message": "File processed successfully"}
+            return {"status": "success"}
 
         except Exception as e:
             return {"status": "error", "message": str(e)}

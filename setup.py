@@ -1,8 +1,11 @@
 from setuptools import setup, find_packages
 
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name="vertex_batch",
-    version="1.0.1",
+    version="1.0.2",
     author="AYOUB ERRKHIS",
     author_email="ayoub.errkhis@aol.com",
     description="A module for batch processing with Google Cloud Storage and MongoDB integration.",
@@ -21,4 +24,6 @@ setup(
         "Programming Language :: Python :: 3",
     ],
     python_requires='>=3.6',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
 )

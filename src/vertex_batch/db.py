@@ -4,16 +4,15 @@ from pathlib import Path
 
 
 class Db:
-    def __init__(self, host: str, port: int, db_name: str, batch_collection_name: str, file_collection_name: str = "file_infos"):
-        self.host = host
-        self.port = port
+    def __init__(self, url: str, db_name: str, batch_collection_name: str, file_collection_name: str = "file_infos"):
+        self.url = url
         self.db_name = db_name
         self.batch_collection_name = batch_collection_name
         self.file_collection_name = file_collection_name
 
     def _connect(self):
         try:
-            client = MongoClient(self.host, self.port)
+            client = MongoClient(self.url)
             return client
         except Exception as e:
             print(f"Error connecting to database: {e}")

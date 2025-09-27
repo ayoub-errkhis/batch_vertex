@@ -27,8 +27,7 @@ Use [`vertex_batch.db.Db`](vertex_batch/db.py) to interact with the batch databa
 from vertex_batch.db import Db
 
 db = Db(
-    host="mongo",
-    port=27017,
+    url="...",
     db_name="batchs",
     batch_collection_name="voc"
 )
@@ -161,6 +160,7 @@ def send_voc_batch():
 - GOOGLE_PROJECT_NAME
 - GOOGLE_PROJECT_LOCATION
 - BATCH_FILE_SIZE_LIMIT
+- MONGO_DB_URL
 
 ## License
 

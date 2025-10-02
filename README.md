@@ -1,6 +1,6 @@
 # vertex_batch Library Documentation
 
-`vertex_batch` is a Python library designed for batch processing and management of payloads. It provides abstractions for database operations, batch file handling, and callback server management, enabling scalable and robust batch processing pipelines.
+`vertex_batch` is a Python library designed for LLM google vertex batch processing. It provides abstractions for database operations, batch file handling, and callback server management, enabling scalable and robust batch processing pipelines.
 
 ## Features
 
@@ -28,8 +28,8 @@ from vertex_batch.db import Db
 
 db = Db(
     url="...",
-    db_name="batchs",
-    batch_collection_name="voc"
+    db_name="...",
+    batch_collection_name="..."
 )
 
 # Save, update, and retrieve payloads
@@ -71,7 +71,7 @@ line = Line(
     custom_id="conversationId-vocId",
     user_prompt="User prompt text",
     sys_prompt="System prompt text",
-    action="extract_feedbacks"
+    **kwargs
 )
 line.save()
 ```
@@ -106,6 +106,8 @@ import threading
 threading.Thread(target=callback.start_server, daemon=True).start()
 ```
 
+NOTE : the callback path is /batch_processing_done
+
 ## Example Workflow
 
 1. **Save payloads** to the batch database using `Db`.
@@ -122,8 +124,8 @@ from vertex_batch.db import Db
 from vertex_batch.line import Line
 from vertex_batch.file import File
 
-@celery_app.task(name="send_voc_batch")
-def send_voc_batch():
+@celery_app.task(name="...")
+def function_task():
     db = Db(...)
     file = File(...)
     payloads = db.get_payloads(status="PENDING")
@@ -156,6 +158,7 @@ def send_voc_batch():
 - `Callback.start_server()`
 
 ### DO NOT FORGET TO SET THOSE OS ENV VARIABLES
+- GOOGLE_APPLICATION_CREDENTIALS
 - GOOGLE_STORAGE_BUCKET
 - GOOGLE_PROJECT_NAME
 - GOOGLE_PROJECT_LOCATION

@@ -17,7 +17,7 @@ class Callback:
         self.db = db
 
         # register routes
-        self.app.post("/callback")(self.callback)
+        self.app.post("/batch_processing_done")(self.callback)
 
     def _process_file_gemini(self, file_path: Path) -> list:
         try:

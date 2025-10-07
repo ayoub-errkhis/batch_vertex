@@ -38,6 +38,10 @@ class Callback:
                 for line in file:
                     data = json_repair.loads(line)
 
+                    # Skip if status is present (indicating an error)
+                    if data.get("status"):
+                        continue
+
                     response_brut = data.get("response")["candidates"][0]["content"][
                         "parts"
                     ][0]["text"]
@@ -86,6 +90,12 @@ class Callback:
                     file_path=Path(f"{Path(file_path).parts[2]}.jsonl"),
                     status="DONE"
                 )
+
+            self.db.flag_payloads(
+                file_path=Path(file_path),
+                flag="FAILED",
+                clean=True
+            )
 
             local_file_path = self.destination_dir / Path(file_path).name
             local_file_path.unlink(missing_ok=True)

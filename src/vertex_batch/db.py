@@ -22,14 +22,20 @@ class Db:
         if client:
             client.close()
         
-    def flag_payloads(self, file_path: Path, flag: str):
+    def flag_payloads(self, file_path: Path, flag: str, clean: bool = False):
         client = self._connect()
         if client:
             try:
                 db = client[self.db_name]
                 collection = db[self.batch_collection_name]
+
+                if clean:
+                    filter_query = {"file_name": file_path.name, "status": "written"}
+                else:
+                    filter_query = {"file_name": file_path.name}
+
                 result = collection.update_many(
-                    {"file_name": file_path.name},
+                    filter_query,
                     {"$set": {"status": flag, "updated_at": datetime.now()}}
                 )
                 if result.matched_count:

@@ -34,7 +34,7 @@ db = Db(
 
 # Save, update, and retrieve payloads
 db.save_payload(payload)
-db.update_payload(custom_id="...", status="done")
+db.update_payload(custom_id="...", status="DONE")
 payloads = db.get_payloads(status="PENDING")
 ```
 

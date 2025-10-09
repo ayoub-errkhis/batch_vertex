@@ -87,7 +87,7 @@ class File:
 
                     self.db.update_payload(
                         custom_id=custom_id,
-                        status="written",
+                        status="WRITTEN",
                         file_name=self.file_path.name
                     )
 

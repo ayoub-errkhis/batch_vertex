@@ -30,7 +30,7 @@ class Line:
             "top_p": self.top_p,
             "temperature": self.temperature,
             "max_output_tokens": self.max_output_tokens,
-            "status": "pending",
+            "status": "PENDING",
         }
         payload.update(self.extra_fields)  # Merge extra fields into payload
         return self.db.save_payload(**payload)

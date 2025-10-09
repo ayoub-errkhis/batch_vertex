@@ -30,7 +30,7 @@ class Db:
                 collection = db[self.batch_collection_name]
 
                 if clean:
-                    filter_query = {"file_name": file_path.name, "status": "written"}
+                    filter_query = {"file_name": file_path.name, "status": "WRITTEN"}
                 else:
                     filter_query = {"file_name": file_path.name}
 
@@ -144,13 +144,16 @@ class Db:
             print("Failed to connect to the database.")
             return None
         
-    def get_payloads(self, status:str)->list:
+    def get_payloads(self, status: str, file_name: str = None) -> list:
         client = self._connect()
         if client:
             try:
                 db = client[self.db_name]
                 collection = db[self.batch_collection_name]
-                payloads = list(collection.find({"status": status}))
+                query = {"status": status}
+                if file_name:
+                    query["file_name"] = file_name
+                payloads = list(collection.find(query))
                 return payloads
             except Exception as e:
                 print(f"Error retrieving payloads from database: {e}")

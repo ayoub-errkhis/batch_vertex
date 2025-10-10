@@ -9,17 +9,18 @@ import os
 
 class Callback:
 
-    def __init__(self, db:Db, port: int, destination_dir: Path, func: callable = None):
+    def __init__(self, db:Db, port: int, destination_dir: Path, func: callable = None, gateway: bool = False):
         self.port = port
         self.app = FastAPI()
         self.destination_dir = destination_dir
         self.func = func
         self.db = db
+        self.gateway = gateway
 
         # register routes
         self.app.post("/batch_processing_done")(self.callback)
 
-    def _process_file_gemini(self, file_path: Path) -> None:
+    def _process_file_gemini(self, file_path: Path, db: Db) -> None:
         try:
 
             if file_path.suffix != ".jsonl" or not file_path.is_relative_to(Path("output/")):
@@ -38,7 +39,7 @@ class Callback:
 
                     # Skip if status is present (indicating an error)
                     if data.get("status"):
-                        self.db.update_payload(
+                        db.update_payload(
                             custom_id=data.get('custom_id'),
                             status="FAILED"
                         )
@@ -51,9 +52,9 @@ class Callback:
                         response_brut.replace("```json", "").replace("```", "").strip()
                     )
 
-                    self.db.update_payload(
+                    db.update_payload(
                         custom_id=data.get('custom_id',''),
-                        llm_response=json_repair.loads(response),
+                        llm_response=response,
                         tokens=data.get("response")["usageMetadata"].get("totalTokenCount", 0),
                         status="DONE"
                     )
@@ -70,16 +71,23 @@ class Callback:
 
             if not file_path:
                 raise ValueError("File path is required")
+            
+            # in case of multiple files in multiple collections
+            request_db = self.db
+
+            if self.gateway:
+                collection_name = str(Path(file_path).parts[2]).split("_")[0]
+                request_db = self.db.clone_db(batch_collection_name=collection_name)
 
             await asyncio.to_thread(
-                self._process_file_gemini, Path(file_path)
+                self._process_file_gemini, Path(file_path), request_db
             )
             
             # custom func accepts : results as list and file Path
             if self.func:
                 await asyncio.to_thread(self.func, Path(file_path))
             
-            self.db.update_file(
+            request_db.update_file(
                 file_path=Path(f"{Path(file_path).parts[2]}.jsonl"),
                 status="DONE"
             )

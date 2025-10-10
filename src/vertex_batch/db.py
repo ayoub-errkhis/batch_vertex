@@ -10,6 +10,14 @@ class Db:
         self.batch_collection_name = batch_collection_name
         self.file_collection_name = file_collection_name
 
+    def clone_db(self, batch_collection_name: str) -> "Db":
+        return Db(
+            url=self.url,
+            db_name=self.db_name,
+            batch_collection_name=batch_collection_name,
+            file_collection_name=self.file_collection_name,
+        )
+
     def _connect(self):
         try:
             client = MongoClient(self.url)

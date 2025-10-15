@@ -152,15 +152,20 @@ class Db:
             print("Failed to connect to the database.")
             return None
         
-    def get_payloads(self, status: str, file_name: str = None) -> list:
+    def get_payloads(self, status: str, file_name: str = None, created_before:datetime = None) -> list:
         client = self._connect()
         if client:
             try:
                 db = client[self.db_name]
                 collection = db[self.batch_collection_name]
                 query = {"status": status}
+
                 if file_name:
                     query["file_name"] = file_name
+
+                if created_before:
+                    query["created_at"] = {"$lt": created_before}
+
                 payloads = list(collection.find(query))
                 return payloads
             except Exception as e:

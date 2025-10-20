@@ -1,6 +1,11 @@
 from pymongo import MongoClient
 from datetime import datetime
 from pathlib import Path
+import logging
+
+logging.basicConfig(
+    level=logging.INFO
+)
 
 
 class Db:
@@ -23,7 +28,7 @@ class Db:
             client = MongoClient(self.url)
             return client
         except Exception as e:
-            print(f"Error connecting to database: {e}")
+            logging.exception(f"Error connecting to database: {e}")
             return None
 
     def _close(self, client: MongoClient):
@@ -47,15 +52,15 @@ class Db:
                     {"$set": {"status": flag, "updated_at": datetime.now()}}
                 )
                 if result.matched_count:
-                    print(f"All payloads for file {file_path.name} flagged as {flag}.")
+                    logging.info(f"All payloads for file {file_path.name} flagged as {flag}.")
                 else:
-                    print(f"No payloads found for file {file_path.name}.")
+                    logging.info(f"No payloads found for file {file_path.name}.")
             except Exception as e:
-                print(f"Error flagging payloads: {e}")
+                logging.exception(f"Error flagging payloads: {e}")
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
         
     def save_file(self, **kwargs):
         client = self._connect()
@@ -66,13 +71,13 @@ class Db:
                 file_data = dict(kwargs)
                 file_data["created_at"] = datetime.now()
                 collection.insert_one(file_data)
-                print("File data saved to database.")
+                logging.info("File data saved to database.")
             except Exception as e:
-                print(f"Error saving file data to database: {e}")
+                logging.exception(f"Error saving file data to database: {e}")
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
         
     def save_payload(self, **kwargs)->bool:
         client = self._connect()
@@ -82,17 +87,27 @@ class Db:
                 collection = db[self.batch_collection_name]
                 payload = dict(kwargs)
                 payload["status"] = "PENDING"
-                payload["created_at"] = datetime.now()
-                collection.insert_one(payload)
-                print("Payload saved to database.")
+                exist = collection.find_one(filter={"custom_id": payload.get("custom_id")})
+                
+                if exist:
+                    payload["updated_at"] = datetime.now()
+                    collection.update_one(
+                        filter={"custom_id": payload.get("custom_id")},
+                        update={"$set": payload}
+                    )
+                else:
+                    payload["created_at"] = datetime.now()
+                    collection.insert_one(payload)
+
+                logging.info("Payload saved to database.")
                 return True
             except Exception as e:
-                print(f"Error saving payload to database: {e}")
+                logging.exception(f"Error saving payload to database: {e}")
                 return False
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
             return False
 
     def get_file(self, file_path: Path):
@@ -104,12 +119,12 @@ class Db:
                 file_info = collection.find_one({"file_name": file_path.name})
                 return file_info
             except Exception as e:
-                print(f"Error retrieving file info: {e}")
+                logging.exception(f"Error retrieving file info: {e}")
                 return None
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
             return None
 
     def update_file(self, file_path: Path, **kwargs):
@@ -125,15 +140,15 @@ class Db:
                     {"$set": update_fields}
                 )
                 if result.matched_count:
-                    print(f"File {file_path.name} updated with fields {list(kwargs.keys())}.")
+                    logging.info(f"File {file_path.name} updated with fields {list(kwargs.keys())}.")
                 else:
-                    print(f"No file info found with file_name {file_path.name}.")
+                    logging.info(f"No file info found with file_name {file_path.name}.")
             except Exception as e:
-                print(f"Error updating file info: {e}")
+                logging.exception(f"Error updating file info: {e}")
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
         
     def get_payload(self, custom_id: str):
         client = self._connect()
@@ -144,12 +159,12 @@ class Db:
                 payload = collection.find_one({"custom_id": custom_id})
                 return payload
             except Exception as e:
-                print(f"Error retrieving payload by custom_id: {e}")
+                logging.exception(f"Error retrieving payload by custom_id: {e}")
                 return None
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
             return None
         
     def get_payloads(self, status: str, file_name: str = None, created_before:datetime = None) -> list:
@@ -169,12 +184,12 @@ class Db:
                 payloads = list(collection.find(query))
                 return payloads
             except Exception as e:
-                print(f"Error retrieving payloads from database: {e}")
+                logging.exception(f"Error retrieving payloads from database: {e}")
                 return []
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")
             return []
         
     def update_payload(self, custom_id: str, **kwargs):
@@ -190,12 +205,12 @@ class Db:
                     {"$set": update_fields}
                 )
                 if result.matched_count:
-                    print(f"Payload {custom_id} updated with fields {list(kwargs.keys())}.")
+                    logging.info(f"Payload {custom_id} updated with fields {list(kwargs.keys())}.")
                 else:
-                    print(f"No payload found with custom_id {custom_id}.")
+                    logging.info(f"No payload found with custom_id {custom_id}.")
             except Exception as e:
-                print(f"Error updating payload: {e}")
+                logging.exception(f"Error updating payload: {e}")
             finally:
                 self._close(client)
         else:
-            print("Failed to connect to the database.")
+            logging.info("Failed to connect to the database.")

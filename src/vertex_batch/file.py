@@ -4,6 +4,11 @@ from google.cloud import storage
 import os
 from google.genai.types import CreateBatchJobConfig, HttpOptions
 from google import genai
+import logging
+
+logging.basicConfig(
+    level=logging.INFO
+)
 
 
 class File:
@@ -27,19 +32,19 @@ class File:
                     file_size=0,
                     status="created"
                 )
-                print(f"File {self.file_path} created.")
+                logging.info(f"File {self.file_path} created.")
             else:
-                print(f"File {self.file_path} already exists.")
+                logging.info(f"File {self.file_path} already exists.")
         except Exception as e:
-            print(f"Error creating file: {e}")
+            logging.exception(f"Error creating file: {e}")
 
     def _delete(self):
         if self.file_path.exists():
             self.file_path.unlink()
             self.file_path = None
-            print(f"File {self.file_path} deleted.")
+            logging.info(f"File {self.file_path} deleted.")
         else:
-            print(f"File {self.file_path} does not exist.")
+            logging.info(f"File {self.file_path} does not exist.")
 
     def write(self, paylods: list, is_relaunch:bool= False) -> bool:
         try:
@@ -98,7 +103,7 @@ class File:
 
             return True
         except Exception as e:
-            print(f"Error writing to file: {e}")
+            logging.exception(f"Error writing to file: {e}")
             return False
 
     def _upload(self, file_path: Path) -> str:
@@ -119,14 +124,14 @@ class File:
             return f"gs://{bucket_name}/input/gemini/{file_path.name}"
 
         except Exception as e:
-            print(f"Upload failed: {e}")
+            logging.exception(f"Upload failed: {e}")
             raise
 
     def process(self):
         try:
 
             if self.file_path is None:
-                print("File not found.")
+                logging.info("File not found.")
                 return
 
             google_storage_file = self._upload(self.file_path)
@@ -154,23 +159,23 @@ class File:
             self._delete()
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
 
     def file_size_exceed_limits(self):
         try:
             if self.file_path is None or not self.file_path.exists():
-                print("File does not exist.")
+                logging.info("File does not exist.")
                 return False
             file_size = self.file_path.stat().st_size
             max_size = int(os.getenv("BATCH_FILE_SIZE_LIMIT")) * 1024 * 1024  # 10 MB in bytes
             if file_size > max_size:
-                print(f"File size {file_size} bytes exceeds 10 MB.")
+                logging.info(f"File size {file_size} bytes exceeds 10 MB.")
                 return True
             else:
-                print(f"File size {file_size} bytes is within the 10 MB limit.")
+                logging.info(f"File size {file_size} bytes is within the 10 MB limit.")
                 return False
         except Exception as e:
-            print(e)
+            logging.exception(e)
     
     @staticmethod
     def download(google_storage_file_path: Path, destination_dir: Path) -> Path:
@@ -202,5 +207,5 @@ class File:
             return output_file_path
 
         except Exception as e:
-            print(e)
+            logging.exception(e)
             return None

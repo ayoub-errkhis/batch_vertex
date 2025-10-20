@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from pathlib import Path
 import uvicorn
 import json_repair
@@ -6,6 +7,11 @@ import asyncio
 from .file import File
 from .db import Db
 import os
+import logging
+
+logging.basicConfig(
+    level= logging.INFO,
+)
 
 class Callback:
 
@@ -30,39 +36,46 @@ class Callback:
                 google_storage_file_path=file_path,
                 destination_dir=self.destination_dir
             )
+                
             if not downloaded_file_path:
-                raise Exception("Failed to download file from Google Cloud Storage")
+                db.flag_payloads(
+                    file_path = Path(f"{Path(file_path).parts[2]}.jsonl"),
+                    flag = "FAILED",
+                    clean = True
+                )
+                raise Exception("File does not downloaded successfuly")
 
             with open(downloaded_file_path, "r") as file:
                 for line in file:
-                    data = json_repair.loads(line)
+                    try:
+                        data = json_repair.loads(line)
 
-                    # Skip if status is present (indicating an error)
-                    if data.get("status"):
-                        db.update_payload(
-                            custom_id=data.get('custom_id'),
-                            status="FAILED"
+                        # Skip if status is present (indicating an error)
+                        if data.get("status") or data.get("response")["candidates"][0]['finishReason'] != "STOP":
+                            db.update_payload(
+                                custom_id=data.get('custom_id'),
+                                status="FAILED"
+                            )
+                            continue
+
+                        response_brut = data.get("response")["candidates"][0]["content"]["parts"][0]["text"]
+                        response = (
+                            response_brut.replace("```json", "").replace("```", "").strip()
                         )
+
+                        db.update_payload(
+                            custom_id=data.get('custom_id',''),
+                            llm_response=response,
+                            tokens=data.get("response")["usageMetadata"].get("totalTokenCount", 0),
+                            status="DONE"
+                        )
+                    except Exception as e:
                         continue
-
-                    response_brut = data.get("response")["candidates"][0]["content"][
-                        "parts"
-                    ][0]["text"]
-                    response = (
-                        response_brut.replace("```json", "").replace("```", "").strip()
-                    )
-
-                    db.update_payload(
-                        custom_id=data.get('custom_id',''),
-                        llm_response=response,
-                        tokens=data.get("response")["usageMetadata"].get("totalTokenCount", 0),
-                        status="DONE"
-                    )
 
             os.remove(downloaded_file_path)
 
         except Exception as e:
-            print(e)
+            logging.exception(f"exception appeared on process file gemini function : {e}")
 
     async def callback(self, request: Request):
         try:
@@ -79,29 +92,46 @@ class Callback:
                 collection_name = str(Path(file_path).parts[2]).split("_")[0]
                 request_db = self.db.clone_db(batch_collection_name=collection_name)
 
-            await asyncio.to_thread(
-                self._process_file_gemini, Path(file_path), request_db
-            )
-            
-            # custom func accepts : results as list and file Path
-            if self.func:
-                await asyncio.to_thread(self.func, Path(file_path))
-            
-            request_db.update_file(
-                file_path=Path(f"{Path(file_path).parts[2]}.jsonl"),
-                status="DONE"
-            )
+            try:
+                await asyncio.to_thread(
+                    self._process_file_gemini, Path(file_path), request_db
+                )
 
-            local_file_path = self.destination_dir / Path(file_path).name
-            local_file_path.unlink(missing_ok=True)
+                request_db.update_file(
+                    file_path=Path(f"{Path(file_path).parts[2]}.jsonl"),
+                    status="DONE"
+                )
 
-            return {"status": "success"}
+                if self.func:
+                    await asyncio.to_thread(self.func, Path(file_path))
+
+            except Exception as e:
+                logging.exception(f"An error occurred while processing the file : {e}")
+                return JSONResponse(
+                    content={
+                        "message": f"An error occurred while processing the file : {e}"
+                    },
+                    status_code=500
+                )
+                    
+            return JSONResponse(
+                content = {
+                    "message": f"Callback completed successfully"
+                },
+                status_code=200
+            )
 
         except Exception as e:
-            return {"status": "error", "message": str(e)}
+            logging.exception(f"An error occurred while processing the callback : {e}")
+            return JSONResponse(
+                content = {
+                    "message" : f"An error occurred while processing the callback : {e}"
+                },
+                status_code=500
+            )
 
     def start_server(self):
         try:
             uvicorn.run(app=self.app, host="0.0.0.0", port=self.port)
         except Exception as e:
-            print(e)
+            logging.exception(f"error while starting the server : {e}")

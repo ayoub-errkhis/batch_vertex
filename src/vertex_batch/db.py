@@ -43,7 +43,7 @@ class Db:
                 collection = db[self.batch_collection_name]
 
                 if clean:
-                    filter_query = {"file_name": file_path.name, "status": "WRITTEN"}
+                    filter_query = {"file_name": file_path.name, "status": "SAVED"}
                 else:
                     filter_query = {"file_name": file_path.name}
 
@@ -86,7 +86,6 @@ class Db:
                 db = client[self.db_name]
                 collection = db[self.batch_collection_name]
                 payload = dict(kwargs)
-                payload["status"] = "PENDING"
                 exist = collection.find_one(filter={"custom_id": payload.get("custom_id")})
                 
                 if exist:

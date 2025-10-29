@@ -42,9 +42,9 @@ class File:
         if self.file_path.exists():
             self.file_path.unlink()
             self.file_path = None
-            logging.info(f"File {self.file_path} deleted.")
+            logging.info(f"File successfuly deleted.")
         else:
-            logging.info(f"File {self.file_path} does not exist.")
+            logging.info(f"File does not exist.")
 
     def write(self, paylods: list, is_relaunch:bool= False) -> bool:
         try:
@@ -136,11 +136,6 @@ class File:
 
             google_storage_file = self._upload(self.file_path)
 
-            self.db.update_file(
-                file_path=Path(self.file_path.name),
-                status="processing"
-            )
-
             vertex_client = genai.Client(
                 vertexai=True,
                 http_options=HttpOptions(api_version="v1"),
@@ -156,6 +151,16 @@ class File:
                 config=CreateBatchJobConfig(dest=output_file),
             )
 
+            self.db.update_file(
+                file_path=Path(self.file_path.name),
+                status="processing"
+            )
+
+            self.db.flag_payloads(
+                file_path=Path(self.file_path.name),
+                flag="PROCESSING"
+            )
+
             self._delete()
 
         except Exception as e:
@@ -167,12 +172,12 @@ class File:
                 logging.info("File does not exist.")
                 return False
             file_size = self.file_path.stat().st_size
-            max_size = int(os.getenv("BATCH_FILE_SIZE_LIMIT")) * 1024 * 1024  # 10 MB in bytes
+            max_size = int(os.getenv("BATCH_FILE_SIZE_LIMIT", 2)) * 1024 * 1024  # 10 MB in bytes
             if file_size > max_size:
-                logging.info(f"File size {file_size} bytes exceeds 10 MB.")
+                logging.info(f"File size {file_size} bytes exceeds limits.")
                 return True
             else:
-                logging.info(f"File size {file_size} bytes is within the 10 MB limit.")
+                logging.info(f"File size {file_size} bytes is within the limit.")
                 return False
         except Exception as e:
             logging.exception(e)

@@ -166,7 +166,7 @@ class Db:
             logging.info("Failed to connect to the database.")
             return None
         
-    def get_payloads(self, status: str, file_name: str = None, created_before:datetime = None) -> list:
+    def get_payloads(self, status: str, file_name: str = None, created_before:datetime = None, relaunch_counter_threeshold:int = None) -> list:
         client = self._connect()
         if client:
             try:
@@ -179,6 +179,12 @@ class Db:
 
                 if created_before:
                     query["created_at"] = {"$lt": created_before}
+
+                if relaunch_counter_threeshold:
+                    query["$or"] = [
+                        {"relaunched": {"$lt": relaunch_counter_threeshold}},
+                        {"relaunched": {"$exists": False}},
+                    ]
 
                 payloads = list(collection.find(query))
                 return payloads

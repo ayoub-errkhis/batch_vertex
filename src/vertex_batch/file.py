@@ -21,6 +21,22 @@ class File:
         self.file_path = None
         self.gemini_model = gemini_model
 
+    def _increment_relaunch_counters(self, custom_id: str):
+        try:
+            current_data = self.db.get_payload(custom_id=custom_id)
+            if current_data and 'relaunched' in current_data:
+                self.db.update_payload(
+                    custom_id=custom_id,
+                    relaunched=current_data['relaunched'] + 1
+                )
+            else:
+                self.db.update_payload(
+                    custom_id=custom_id,
+                    relaunched=1
+                )
+        except Exception as e:
+            logging.exception(f"Error incrementing relaunch counters: {e}")
+
     def _create(self) -> None:
         try:
             self.folder_path.mkdir(parents=True, exist_ok=True)
@@ -62,12 +78,9 @@ class File:
             with open(self.file_path, "a") as file:
                 for payload in paylods:
                     custom_id = payload['custom_id']
-
+                    
                     if is_relaunch:
-                        self.db.update_payload(
-                            custom_id= custom_id,
-                            relaunched=1
-                        )
+                        self._increment_relaunch_counters(custom_id=custom_id)
 
                     line_content = {
                         "custom_id": payload["custom_id"],

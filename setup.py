@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="vertex_batch",
-    version="0.1.12",
+    version="0.1.13",
     author="AYOUB ERRKHIS",
     author_email="ayoub.errkhis@aol.com",
     description="A module for batch processing with Google Cloud Storage and MongoDB integration.",

@@ -78,6 +78,7 @@ class File:
             with open(self.file_path, "a") as file:
                 for payload in paylods:
                     custom_id = payload['custom_id']
+                    output_schema = payload.get("output_schema", None)
                     
                     if is_relaunch:
                         self._increment_relaunch_counters(custom_id=custom_id)
@@ -101,6 +102,11 @@ class File:
                             },
                         },
                     }
+
+                    if output_schema :
+                        line_content["request"]["generationConfig"]["responseMimeType"] = "application/json"
+                        line_content["request"]["generationConfig"]["responseSchema"] = output_schema
+
                     file.write(f"{line_content}\n")
 
                     self.db.update_payload(

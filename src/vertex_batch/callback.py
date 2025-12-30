@@ -65,7 +65,7 @@ class Callback:
 
                         db.update_payload(
                             custom_id=data.get('custom_id',''),
-                            llm_response=response,
+                            llm_response=json_repair.loads(response),
                             tokens=data.get("response")["usageMetadata"].get("totalTokenCount", 0),
                             status="DONE"
                         )

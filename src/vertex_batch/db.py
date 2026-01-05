@@ -178,8 +178,8 @@ class Db:
                     query["status"] = status
 
                 if custom_ids:
-                    query["custom_id"] = {"$in": custom_ids}
-
+                    query["$or"] = [ {"custom_id": {"$regex": pattern}} for pattern in custom_ids ]
+ 
                 if file_name:
                     query["file_name"] = file_name
 

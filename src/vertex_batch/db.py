@@ -166,13 +166,19 @@ class Db:
             logging.info("Failed to connect to the database.")
             return None
         
-    def get_payloads(self, status: str, file_name: str = None, created_before:datetime = None, relaunch_counter_threeshold:int = None) -> list:
+    def get_payloads(self, status: str = None, custom_ids: list = None, file_name: str = None, created_before: datetime = None, relaunch_counter_threeshold: int = None) -> list:
         client = self._connect()
         if client:
             try:
                 db = client[self.db_name]
                 collection = db[self.batch_collection_name]
-                query = {"status": status}
+                query = {}
+
+                if status:
+                    query["status"] = status
+
+                if custom_ids:
+                    query["custom_id"] = {"$in": custom_ids}
 
                 if file_name:
                     query["file_name"] = file_name

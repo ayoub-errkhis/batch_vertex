@@ -166,43 +166,56 @@ class Db:
             logging.info("Failed to connect to the database.")
             return None
         
+
     def get_payloads(self, status: str = None, custom_ids: list = None, file_name: str = None, created_before: datetime = None, relaunch_counter_threeshold: int = None) -> list:
+        
         client = self._connect()
-        if client:
-            try:
-                db = client[self.db_name]
-                collection = db[self.batch_collection_name]
-                query = {}
+        if not client:
+            logging.info("Failed to connect to the database.")
+            return []
 
-                if status:
-                    query["status"] = status
+        try:
+            db = client[self.db_name]
+            collection = db[self.batch_collection_name]
+            
+            # Use a list for $and to prevent overwriting keys
+            and_conditions = []
 
-                if custom_ids:
-                    query["$or"] = [ {"custom_id": {"$regex": pattern}} for pattern in custom_ids ]
- 
-                if file_name:
-                    query["file_name"] = file_name
+            if status:
+                and_conditions.append({"status": status})
 
-                if created_before:
-                    query["created_at"] = {"$lt": created_before}
+            if custom_ids:
+                # Optimization: Use $in with regex if possible, 
+                # but for multiple distinct regex patterns, $or is correct.
+                and_conditions.append({ "$or": [{"custom_id": {"$regex": p}} for p in custom_ids] })
 
-                if relaunch_counter_threeshold:
-                    query["$or"] = [
+            if file_name:
+                and_conditions.append({"file_name": file_name})
+
+            if created_before:
+                and_conditions.append({"created_at": {"$lt": created_before}})
+
+            if relaunch_counter_threeshold is not None:
+                and_conditions.append({
+                    "$or": [
                         {"relaunched": {"$lt": relaunch_counter_threeshold}},
                         {"relaunched": {"$exists": False}},
                     ]
+                })
 
-                payloads = list(collection.find(query))
-                return payloads
-            except Exception as e:
-                logging.exception(f"Error retrieving payloads from database: {e}")
-                return []
-            finally:
-                self._close(client)
-        else:
-            logging.info("Failed to connect to the database.")
+            # Combine conditions: If list is empty, query is {}, otherwise use $and
+            query = {"$and": and_conditions} if and_conditions else {}
+
+            # Optimization: Use a projection if you don't need all fields
+            # and limit the cursor if the dataset is massive.
+            return list(collection.find(query))
+
+        except Exception as e:
+            logging.exception(f"Error retrieving payloads: {e}")
             return []
-        
+        finally:
+            self._close(client)
+         
     def update_payload(self, custom_id: str, **kwargs):
         client = self._connect()
         if client:
